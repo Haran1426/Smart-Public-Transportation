@@ -3,7 +3,6 @@ package com.example.smart_public_transportation
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.zip.GZIPInputStream
 
 internal data class Favorite(
     val kind: String,
@@ -103,8 +102,8 @@ internal object BusCatalog {
     @Volatile private var catalog: JSONArray? = null
 
     private fun routes(context: Context): JSONArray = catalog ?: synchronized(this) {
-        catalog ?: context.assets.open("seoul_bus_routes.json.gz").use { input ->
-            GZIPInputStream(input).bufferedReader(Charsets.UTF_8).use { JSONArray(it.readText()) }
+        catalog ?: context.assets.open("seoul_bus_routes.json").bufferedReader(Charsets.UTF_8).use {
+            JSONArray(it.readText())
         }.also { catalog = it }
     }
 
