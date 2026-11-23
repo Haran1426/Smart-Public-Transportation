@@ -1,0 +1,13 @@
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_description"
+    android:minWidth="190dp"
+    android:minHeight="122dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/transit_widget"
+    android:previewLayout="@layout/transit_widget"
+    android:configure="com.example.smart_public_transportation.WidgetSettingsActivity"
+    android:widgetFeatures="reconfigurable"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen" />
