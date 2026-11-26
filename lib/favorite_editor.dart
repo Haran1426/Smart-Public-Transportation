@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
+import 'bus_stop_search.dart';
 import 'transit.dart';
 
 class FavoriteEditor extends StatefulWidget {
@@ -139,6 +140,13 @@ class _FavoriteEditorState extends State<FavoriteEditor> {
     } finally {
       if (mounted) setState(() => loading = false);
     }
+  }
+
+  Future<void> findBusStop() async {
+    final favorite = await Navigator.of(context).push<Favorite>(
+      MaterialPageRoute(builder: (_) => const BusStopSearchPage()),
+    );
+    if (mounted && favorite != null) Navigator.pop(context, favorite);
   }
 
   String get stationName {
@@ -286,6 +294,12 @@ class _FavoriteEditorState extends State<FavoriteEditor> {
           stop['ars']!.contains(query),
     );
     return [
+      OutlinedButton.icon(
+        onPressed: loading ? null : findBusStop,
+        icon: const Icon(Icons.location_on_outlined),
+        label: const Text('정류장으로 찾기'),
+      ),
+      const SizedBox(height: 12),
       TextField(
         controller: busQuery,
         textInputAction: TextInputAction.search,

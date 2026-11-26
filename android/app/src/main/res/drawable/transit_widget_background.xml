@@ -1,4 +1,4 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="#102B30" />
+    <solid android:color="@color/transit_panel" />
     <corners android:radius="22dp" />
 </shape>

@@ -1,0 +1,24 @@
+<resources>
+    <color name="transit_ink">#271D2B</color>
+    <color name="transit_peach">#FFB887</color>
+
+    <color name="transit_panel">#272136</color>
+    <color name="transit_panel_line">#584968</color>
+    <color name="transit_panel_text">#FFF6EE</color>
+    <color name="transit_panel_muted">#D0C2DB</color>
+    <color name="transit_panel_eta">#FFC19A</color>
+    <color name="transit_route_background">#463653</color>
+    <color name="transit_route_subway">#EAD3FF</color>
+    <color name="transit_route_bus_background">#303B59</color>
+    <color name="transit_route_bus">#C7DAFF</color>
+
+    <color name="transit_panel_light">#FFFCF8</color>
+    <color name="transit_panel_light_line">#E5D6D5</color>
+    <color name="transit_panel_light_text">#292030</color>
+    <color name="transit_panel_light_muted">#635669</color>
+    <color name="transit_panel_light_eta">#A33924</color>
+    <color name="transit_route_light_subway_background">#F1E5FA</color>
+    <color name="transit_route_light_subway">#633B81</color>
+    <color name="transit_route_light_bus_background">#E5EDFF</color>
+    <color name="transit_route_light_bus">#274C94</color>
+</resources>

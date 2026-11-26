@@ -1,104 +1,205 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingStart="14dp"
-    android:paddingEnd="8dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp"
-    android:background="@drawable/transit_widget_background"
-    android:orientation="horizontal">
+    android:background="@drawable/transit_widget_background">
 
     <LinearLayout
         android:id="@+id/widget_main"
-        android:layout_width="0dp"
-        android:layout_weight="1"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:gravity="center_vertical">
+        android:paddingStart="13dp"
+        android:paddingEnd="13dp"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp">
 
-        <TextView
-            android:id="@+id/widget_line"
+        <LinearLayout
+            android:id="@+id/widget_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:includeFontPadding="false"
-            android:text="언제와"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:textColor="#86E6D4" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/widget_identity"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/widget_line"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:maxWidth="78dp"
+                        android:paddingStart="7dp"
+                        android:paddingEnd="7dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:background="@drawable/transit_widget_route"
+                        android:includeFontPadding="false"
+                        android:text="@string/transit_name"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/transit_peach" />
+
+                    <TextView
+                        android:id="@+id/widget_title"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="7dp"
+                        android:includeFontPadding="false"
+                        android:text="구간 선택"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/transit_panel_text" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/widget_direction"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:includeFontPadding="false"
+                    android:text="버스 또는 지하철을 골라 주세요"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:textSize="11sp"
+                    android:textColor="@color/transit_panel_muted" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/widget_refresh"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/transit_widget_button"
+                android:contentDescription="구간 선택"
+                android:padding="12dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/transit_widget_add" />
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/widget_title"
+            android:id="@+id/widget_divider"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:includeFontPadding="false"
-            android:layout_marginTop="3dp"
-            android:text="구간 선택"
-            android:maxLines="1"
-            android:ellipsize="end"
+            android:layout_height="1dp"
+            android:layout_marginTop="4dp"
+            android:importantForAccessibility="no"
+            android:background="@color/transit_panel_line" />
+
+        <LinearLayout
+            android:id="@+id/widget_arrivals"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/widget_first_group"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/widget_eta_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:text="첫 도착"
+                    android:textSize="10sp"
+                    android:maxLines="1"
+                    android:visibility="gone"
+                    android:textColor="@color/transit_panel_muted" />
+
+                <TextView
+                    android:id="@+id/widget_eta"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:gravity="center_vertical"
+                    android:includeFontPadding="false"
+                    android:text="눌러서 설정"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="13sp"
+                    android:autoSizeMaxTextSize="30sp"
+                    android:autoSizeStepGranularity="1sp"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/transit_peach" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/widget_next_group"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/widget_next_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:text="다음 도착"
+                    android:textSize="10sp"
+                    android:maxLines="1"
+                    android:textColor="@color/transit_panel_muted" />
+
+                <TextView
+                    android:id="@+id/widget_next"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:gravity="center_vertical"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="12sp"
+                    android:autoSizeMaxTextSize="19sp"
+                    android:autoSizeStepGranularity="1sp"
+                    android:textSize="19sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/transit_panel_text" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_empty_options"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="위젯 설정"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="#FFFFFF" />
-
-        <TextView
-            android:id="@+id/widget_direction"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:includeFontPadding="false"
-            android:layout_marginTop="2dp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:textSize="11sp"
-            android:textColor="#C0D4D1" />
-
-        <TextView
-            android:id="@+id/widget_eta"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:includeFontPadding="false"
-            android:layout_marginTop="5dp"
-            android:text="눌러서 설정"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF" />
-
-        <TextView
-            android:id="@+id/widget_next"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:includeFontPadding="false"
-            android:layout_marginTop="2dp"
-            android:visibility="gone"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:textSize="11sp"
-            android:textColor="#C0D4D1" />
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/widget_updated"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:includeFontPadding="false"
-            android:layout_marginTop="2dp"
             android:maxLines="1"
             android:ellipsize="end"
             android:textSize="10sp"
-            android:textColor="#C0D4D1" />
+            android:visibility="gone"
+            android:textColor="@color/transit_panel_muted" />
     </LinearLayout>
-
-    <ImageButton
-        android:id="@+id/widget_refresh"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:layout_gravity="center_vertical"
-        android:layout_marginStart="4dp"
-        android:background="@drawable/transit_widget_button"
-        android:contentDescription="도착 정보 새로고침"
-        android:padding="12dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/transit_refresh" />
-</LinearLayout>
+</FrameLayout>

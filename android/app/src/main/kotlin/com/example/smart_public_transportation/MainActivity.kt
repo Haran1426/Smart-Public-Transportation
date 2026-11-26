@@ -37,11 +37,26 @@ class MainActivity : FlutterActivity() {
                 "busStops" -> background(result) {
                     BusCatalog.stops(applicationContext, call.arguments as String)
                 }
+                "searchBusStops" -> background(result) {
+                    BusCatalog.searchStops(applicationContext, call.arguments as String)
+                }
+                "busRoutesAtStop" -> background(result) {
+                    BusCatalog.routesAtStop(applicationContext, call.arguments as String).map(Favorite::fields)
+                }
                 "arrivals" -> background(result) {
                     val favorite = Favorite.from(call.arguments as Map<*, *>)
                     TransitWidget.fetch(applicationContext, favorite).fields()
                 }
-                "pin" -> result.success(TransitWidget.pin(this, call.arguments as String))
+                "theme" -> result.success(store.theme())
+                "setTheme" -> {
+                    store.setTheme(call.arguments as String)
+                    result.success(null)
+                }
+                "pin" -> {
+                    val favoriteId = call.argument<String>("favoriteId")
+                    val display = WidgetDisplay.from(call.argument<Map<*, *>>("display"))
+                    result.success(favoriteId != null && TransitWidget.pin(this, favoriteId, display))
+                }
                 else -> result.notImplemented()
             }
         }

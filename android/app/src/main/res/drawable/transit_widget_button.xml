@@ -1,7 +1,9 @@
-<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#5686E6D4">
-    <item>
-        <shape android:shape="oval">
-            <solid android:color="#29474B" />
-        </shape>
-    </item>
-</ripple>
+<inset xmlns:android="http://schemas.android.com/apk/res/android" android:inset="4dp">
+    <ripple android:color="#40221D2B">
+        <item>
+            <shape android:shape="oval">
+                <solid android:color="@color/transit_peach" />
+            </shape>
+        </item>
+    </ripple>
+</inset>

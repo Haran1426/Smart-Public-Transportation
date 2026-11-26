@@ -1,57 +1,79 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'favorite_editor.dart';
 import 'transit.dart';
+import 'transit_theme.dart';
+import 'widget_settings.dart';
 
-const ink = Color(0xff102b30);
-const canvas = Color(0xfff2f5f1);
-const teal = Color(0xff0b6759);
-const mint = Color(0xffa6e9d5);
-const muted = Color(0xff506762);
+void main() {
+  final route = WidgetsFlutterBinding.ensureInitialized()
+      .platformDispatcher
+      .defaultRouteName;
+  runApp(MyApp(configuringWidget: route == widgetSettingsRoute));
+}
 
-void main() => runApp(const MyApp());
+class MyApp extends StatefulWidget {
+  const MyApp({super.key, this.configuringWidget = false});
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool configuringWidget;
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode mode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    loadTheme();
+  }
+
+  Future<void> loadTheme() async {
+    try {
+      final channel = widget.configuringWidget
+          ? widgetSettingsChannel
+          : transitChannel;
+      final saved = await channel.invokeMethod<String>('theme');
+      if (mounted && mode == ThemeMode.system && saved != null) {
+        setState(
+          () => mode = saved == 'dark' ? ThemeMode.dark : ThemeMode.light,
+        );
+      }
+    } catch (_) {
+      // Use system appearance if the preference is unavailable.
+    }
+  }
+
+  Future<void> changeTheme(bool dark) async {
+    await transitChannel.invokeMethod<void>(
+      'setTheme',
+      dark ? 'dark' : 'light',
+    );
+    if (mounted) setState(() => mode = dark ? ThemeMode.dark : ThemeMode.light);
+  }
 
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: '언제와',
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      scaffoldBackgroundColor: canvas,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: teal,
-      ).copyWith(primary: teal),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: canvas,
-        foregroundColor: ink,
-        surfaceTintColor: Colors.transparent,
-      ),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(15)),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          minimumSize: const Size(0, 50),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-      ),
-    ),
-    home: const ArrivalBoard(),
+    initialRoute: '/',
+    theme: TransitPalette.light.theme(Brightness.light),
+    darkTheme: TransitPalette.dark.theme(Brightness.dark),
+    themeMode: mode,
+    home: widget.configuringWidget
+        ? const WidgetSettingsPage()
+        : ArrivalBoard(onThemeChanged: changeTheme),
   );
 }
 
 class ArrivalBoard extends StatefulWidget {
-  const ArrivalBoard({super.key});
+  const ArrivalBoard({super.key, required this.onThemeChanged});
+
+  final Future<void> Function(bool dark) onThemeChanged;
 
   @override
   State<ArrivalBoard> createState() => _ArrivalBoardState();
@@ -220,15 +242,24 @@ class _ArrivalBoardState extends State<ArrivalBoard>
     }
   }
 
-  Future<void> pin(Favorite favorite) async {
+  Future<void> pin(Favorite favorite) => Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (context) => WidgetSettingsPage(
+        favorites: favorites,
+        selectedId: favorite.id,
+        initialDisplay: WidgetDisplay(
+          dark: Theme.of(context).brightness == Brightness.dark,
+          remaining: true,
+        ),
+      ),
+    ),
+  );
+
+  Future<void> toggleTheme(bool dark) async {
     try {
-      final requested = await transitChannel.invokeMethod<bool>(
-        'pin',
-        favorite.id,
-      );
-      if (requested != true) feedback('홈 화면을 길게 누르고 위젯 목록에서 ‘언제와’를 찾아주세요.');
+      await widget.onThemeChanged(dark);
     } catch (_) {
-      feedback('홈 화면 위젯을 추가할 수 없어요.');
+      feedback('앱 테마를 저장하지 못했어요.');
     }
   }
 
@@ -254,37 +285,41 @@ class _ArrivalBoardState extends State<ArrivalBoard>
 
   @override
   Widget build(BuildContext context) {
+    final palette = TransitPalette.of(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         title: const Row(
           children: [
             DecoratedBox(
               decoration: BoxDecoration(
-                color: ink,
+                color: TransitPalette.marker,
                 borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
-              child: SizedBox(
-                width: 38,
-                height: 38,
+              child: SizedBox.square(
+                dimension: 36,
                 child: Icon(
-                  Icons.departure_board_outlined,
-                  color: mint,
-                  size: 21,
+                  Icons.place_rounded,
+                  color: TransitPalette.markerInk,
+                  size: 24,
                 ),
               ),
             ),
-            SizedBox(width: 10),
+            SizedBox(width: 9),
             Text(
               '언제와',
-              style: TextStyle(
-                fontSize: 23,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -1,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
           ],
         ),
         actions: [
+          IconButton(
+            onPressed: () => toggleTheme(!dark),
+            tooltip: dark ? '밝은 앱 테마로 전환' : '어두운 앱 테마로 전환',
+            icon: Icon(
+              dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: IconButton(
@@ -304,21 +339,82 @@ class _ArrivalBoardState extends State<ArrivalBoard>
             child: RefreshIndicator(
               onRefresh: refresh,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
                 physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
                 children: [
-                  overview(),
-                  const SizedBox(height: 24),
-                  const Text(
-                    '즐겨찾는 구간',
-                    style: TextStyle(
-                      color: ink,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -.4,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '내 도착판',
+                          style: TextStyle(
+                            color: palette.ink,
+                            fontSize: 34,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -1.2,
+                          ),
+                        ),
+                      ),
+                      IconButton.outlined(
+                        style: IconButton.styleFrom(
+                          backgroundColor: palette.surface,
+                          foregroundColor: palette.accent,
+                          side: BorderSide(color: palette.divider),
+                        ),
+                        onPressed: ready && !refreshing ? refresh : null,
+                        tooltip: '새로고침',
+                        icon: refreshing
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.refresh_rounded),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
+                  if (ready && (!subwaySet || !busSet)) ...[
+                    const SizedBox(height: 5),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: connect,
+                        style: TextButton.styleFrom(
+                          foregroundColor: palette.accent,
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                        ),
+                        icon: const Icon(Icons.link_rounded, size: 18),
+                        label: const Text('실시간 연결 설정'),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '즐겨찾는 구간',
+                          style: TextStyle(
+                            color: palette.ink,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      if (ready)
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 42),
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                          ),
+                          onPressed: edit,
+                          icon: const Icon(Icons.add_rounded, size: 19),
+                          label: const Text('구간 추가'),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   if (loadingFailed)
                     TextButton(
                       onPressed: load,
@@ -327,11 +423,11 @@ class _ArrivalBoardState extends State<ArrivalBoard>
                   else if (!ready)
                     const LinearProgressIndicator()
                   else if (favorites.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
                       child: Text(
-                        '자주 타는 버스나 지하철을 추가해 주세요.',
-                        style: TextStyle(color: muted),
+                        '홈 화면 위젯에 표시할 버스나 지하철 구간을 추가해 주세요.',
+                        style: TextStyle(color: palette.muted),
                       ),
                     ),
                   for (final favorite in favorites)
@@ -347,90 +443,10 @@ class _ArrivalBoardState extends State<ArrivalBoard>
                         onRemove: () => remove(favorite),
                       ),
                     ),
-                  if (ready) ...[
-                    const SizedBox(height: 3),
-                    FilledButton.icon(
-                      onPressed: edit,
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text('구간 추가'),
-                    ),
-                  ],
                 ],
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget overview() {
-    final connected = subwaySet && busSet;
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xff102b30), Color(0xff19433e)],
-        ),
-        borderRadius: BorderRadius.all(Radius.circular(24)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 18, 14, 14),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '내 도착판',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 29,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                  if (connected)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 10),
-                      child: Text(
-                        '서울 버스 · 지하철 도착 정보',
-                        style: TextStyle(color: mint, fontSize: 13),
-                      ),
-                    )
-                  else
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        foregroundColor: mint,
-                        padding: EdgeInsets.zero,
-                        alignment: Alignment.centerLeft,
-                      ),
-                      onPressed: ready ? connect : null,
-                      label: const Text('실시간 연결 설정'),
-                      icon: const Icon(Icons.link, size: 17),
-                    ),
-                ],
-              ),
-            ),
-            IconButton.filledTonal(
-              style: IconButton.styleFrom(
-                backgroundColor: const Color(0xff345752),
-                foregroundColor: Colors.white,
-              ),
-              onPressed: ready && !refreshing ? refresh : null,
-              tooltip: '새로고침',
-              icon: refreshing
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: mint,
-                      ),
-                    )
-                  : const Icon(Icons.refresh_rounded),
-            ),
-          ],
         ),
       ),
     );
@@ -461,120 +477,161 @@ class ArrivalCard extends StatelessWidget {
     _ => '도착 정보를 불러오지 못했어요.',
   };
 
+  String get sourceText => switch (reading.status) {
+    'sample' => '예시 데이터',
+    'live' || 'empty' when reading.checkedAt != null =>
+      '${seoulClock(reading.checkedAt!)} 조회',
+    _ => '',
+  };
+
   @override
   Widget build(BuildContext context) {
-    final accent = favorite.isBus ? const Color(0xff84520e) : teal;
-    final tint = favorite.isBus
-        ? const Color(0xffffedcf)
-        : const Color(0xffd9f1e8);
+    final palette = TransitPalette.of(context);
+    final routeColor = favorite.isBus ? palette.bus : palette.subway;
+    final source = sourceText;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xffdce6dd)),
-        borderRadius: BorderRadius.circular(21),
+        color: palette.canvas,
+        border: Border.all(color: palette.divider),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 12, 7),
+        padding: const EdgeInsets.all(5),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: tint,
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: Icon(
-                    favorite.isBus
-                        ? Icons.directions_bus_rounded
-                        : Icons.train_rounded,
-                    color: accent,
-                    size: 21,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        favorite.line,
-                        style: TextStyle(
-                          color: accent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: palette.surface,
+                borderRadius: BorderRadius.circular(19),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 9, 10, 13),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 106),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: favorite.isBus
+                                  ? palette.busContainer
+                                  : palette.subwayContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 5,
+                              ),
+                              child: Text(
+                                favorite.line,
+                                style: TextStyle(
+                                  color: routeColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                      Text(
-                        favorite.title,
-                        style: const TextStyle(
-                          color: ink,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -.45,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            favorite.title,
+                            style: TextStyle(
+                              color: palette.ink,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              height: 1.15,
+                            ),
+                          ),
                         ),
+                        PopupMenuButton<String>(
+                          tooltip: '구간 옵션',
+                          icon: Icon(
+                            Icons.more_vert,
+                            color: palette.muted,
+                            size: 20,
+                          ),
+                          padding: EdgeInsets.zero,
+                          onSelected: (value) =>
+                              value == 'edit' ? onEdit() : onRemove(),
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'edit', child: Text('구간 수정')),
+                            PopupMenuItem(
+                              value: 'remove',
+                              child: Text('구간 삭제'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Text(
+                      favorite.direction,
+                      style: TextStyle(color: palette.muted, fontSize: 12),
+                    ),
+                    const SizedBox(height: 10),
+                    Divider(height: 1, color: palette.divider),
+                    const SizedBox(height: 9),
+                    if (reading.items.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        child: Text(
+                          statusText,
+                          style: TextStyle(
+                            color: palette.ink,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )
+                    else
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (final (index, arrival)
+                              in reading.items.indexed) ...[
+                            if (index > 0) const SizedBox(width: 12),
+                            Expanded(
+                              child: arrivalTime(palette, arrival, index),
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  tooltip: '구간 옵션',
-                  onSelected: (value) =>
-                      value == 'edit' ? onEdit() : onRemove(),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'edit', child: Text('구간 수정')),
-                    PopupMenuItem(value: 'remove', child: Text('구간 삭제')),
                   ],
                 ),
-              ],
+              ),
             ),
             Padding(
-              padding: const EdgeInsets.only(top: 6, bottom: 8),
-              child: Text(
-                favorite.direction,
-                style: const TextStyle(color: muted, fontSize: 12),
-              ),
-            ),
-            if (reading.items.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(statusText, style: const TextStyle(color: muted)),
-              )
-            else
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.fromLTRB(9, 3, 3, 1),
+              child: Row(
                 children: [
-                  for (final (index, arrival) in reading.items.indexed) ...[
-                    if (index > 0) const SizedBox(width: 8),
-                    Expanded(child: arrivalBox(arrival, accent, tint, index)),
-                  ],
-                ],
-              ),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    reading.status == 'sample'
-                        ? '예시 데이터'
-                        : reading.checkedAt != null && reading.status == 'live'
-                        ? '${seoulClock(reading.checkedAt!)} 조회'
-                        : '',
-                    style: const TextStyle(
-                      color: muted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Text(
+                      source,
+                      style: TextStyle(
+                        color: palette.muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-                TextButton.icon(
-                  onPressed: onPin,
-                  icon: const Icon(Icons.widgets_outlined, size: 16),
-                  label: const Text('위젯 추가'),
-                ),
-              ],
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      backgroundColor: palette.accentContainer,
+                      foregroundColor: palette.accent,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    onPressed: onPin,
+                    icon: Icon(Icons.add_to_home_screen_rounded, size: 17),
+                    label: const Text('위젯 추가'),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -582,52 +639,42 @@ class ArrivalCard extends StatelessWidget {
     );
   }
 
-  Widget arrivalBox(Arrival arrival, Color accent, Color tint, int index) {
+  Widget arrivalTime(TransitPalette palette, Arrival arrival, int index) {
+    final first = index == 0;
     final sample = reading.status == 'sample';
     final expected = sample
         ? (favorite.isBus ? ['5분 후', '12분 후'] : ['3분 후', '8분 후'])[index]
         : arrival.expected;
-    final clock = arrival.time == null || sample
-        ? null
-        : seoulClock(arrival.time!);
     final details = [
-      if (clock != null) '$clock 예정',
-      if (arrival.detail.isNotEmpty && !sample) arrival.detail,
+      if (!sample && arrival.time != null) '${seoulClock(arrival.time!)} 예정',
+      if (!sample && arrival.detail.isNotEmpty) arrival.detail,
     ];
-    return Container(
-      decoration: BoxDecoration(
-        color: index == 0 ? tint : canvas,
-        borderRadius: BorderRadius.circular(13),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            index == 0 ? '첫 도착' : '다음 도착',
-            style: const TextStyle(
-              color: muted,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          first ? '첫 도착' : '다음 도착',
+          style: TextStyle(
+            color: palette.muted,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(height: 2),
-          Text(
-            expected,
-            style: TextStyle(
-              color: index == 0 ? accent : ink,
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -.65,
-            ),
+        ),
+        Text(
+          expected,
+          style: TextStyle(
+            color: first ? palette.accent : palette.ink,
+            fontSize: first && expected.length <= 7 ? 29 : 20,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -.6,
           ),
-          if (details.isNotEmpty)
-            Text(
-              details.join(' · '),
-              style: const TextStyle(color: muted, fontSize: 11),
-            ),
-        ],
-      ),
+        ),
+        if (details.isNotEmpty)
+          Text(
+            details.join(' · '),
+            style: TextStyle(color: palette.muted, fontSize: 11),
+          ),
+      ],
     );
   }
 }
@@ -697,9 +744,12 @@ class _ConnectionPageState extends State<ConnectionPage> {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
+          Text(
             '서울시 도착 정보를 불러오려면 이용할 교통수단의 API 키를 입력해 주세요.',
-            style: TextStyle(color: ink, fontSize: 16),
+            style: TextStyle(
+              color: TransitPalette.of(context).ink,
+              fontSize: 16,
+            ),
           ),
           const SizedBox(height: 24),
           field(
@@ -720,9 +770,9 @@ class _ConnectionPageState extends State<ConnectionPage> {
             (value) => setState(() => removeBus = value),
           ),
           const SizedBox(height: 22),
-          const Text(
+          Text(
             'API 키는 이 기기에 저장되며, 조회할 때 서울시 공식 HTTP 주소로 전송돼요.',
-            style: TextStyle(color: muted),
+            style: TextStyle(color: TransitPalette.of(context).muted),
           ),
           if (error case final message?) ...[
             const SizedBox(height: 10),
