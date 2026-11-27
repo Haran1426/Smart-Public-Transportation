@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:smart_public_transportation/main.dart';
 import 'package:smart_public_transportation/transit.dart';
+import 'package:smart_public_transportation/transit_board.dart';
 import 'package:smart_public_transportation/widget_settings.dart';
 
 void main() {
@@ -36,8 +37,6 @@ void main() {
         'setTheme' => null,
         'load' => {
           'favorites': [subway.toMap()],
-          'subwaySet': false,
-          'busSet': false,
         },
         'arrivals' => {
           'status': 'sample',
@@ -55,7 +54,8 @@ void main() {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('녹사평역'), findsOneWidget);
+    expect(find.widgetWithText(TransitArrivalRow, '녹사평역'), findsOneWidget);
+    expect(find.text('실시간 연결 설정'), findsNothing);
     expect(find.text('예시 데이터'), findsOneWidget);
     expect(find.text('3분 후'), findsOneWidget);
     await tester.tap(find.byTooltip('어두운 앱 테마로 전환'));
@@ -99,7 +99,7 @@ void main() {
     ) async {
       switch (call.method) {
         case 'load':
-          return {'favorites': [], 'subwaySet': false, 'busSet': false};
+          return {'favorites': []};
         case 'busRoutes':
           expect(call.arguments, '용산03');
           return [
@@ -126,7 +126,7 @@ void main() {
           saved = call.arguments as Map<Object?, Object?>;
           return null;
         case 'arrivals':
-          return {'status': 'needsKey', 'checkedAt': 0, 'arrivals': []};
+          return {'status': 'offline', 'checkedAt': 0, 'arrivals': []};
         default:
           throw MissingPluginException();
       }
@@ -156,7 +156,12 @@ void main() {
     final favorite = (saved!['favorites'] as List).single as Map;
     expect(favorite['stopId'], '102900058');
     expect(favorite['selector'], '22');
-    expect(find.text('삼각지역'), findsOneWidget);
+    expect(find.widgetWithText(TransitArrivalRow, '삼각지역'), findsOneWidget);
+    expect(find.text('정류장 순서'), findsOneWidget);
+    await tester.tap(find.text('전체 노선'));
+    await tester.pumpAndSettle();
+    expect(find.text('용산03 정류장'), findsOneWidget);
+    expect(find.text('내 탑승 정류장 · 03567'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -171,7 +176,7 @@ void main() {
     ) async {
       switch (call.method) {
         case 'load':
-          return {'favorites': [], 'subwaySet': false, 'busSet': false};
+          return {'favorites': []};
         case 'searchBusStops':
           expect(call.arguments, '02291');
           if (++searches == 1) throw PlatformException(code: 'transit');
@@ -196,7 +201,7 @@ void main() {
           saved = call.arguments as Map<Object?, Object?>;
           return null;
         case 'arrivals':
-          return {'status': 'needsKey', 'checkedAt': 0, 'arrivals': []};
+          return {'status': 'offline', 'checkedAt': 0, 'arrivals': []};
         default:
           throw MissingPluginException();
       }
@@ -234,7 +239,7 @@ void main() {
     expect(favorite['stopId'], stop);
     expect(favorite['routeId'], '106000004');
     expect(favorite['selector'], '8');
-    expect(find.text(name), findsOneWidget);
+    expect(find.widgetWithText(TransitArrivalRow, name), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

@@ -4,9 +4,10 @@ import 'bus_stop_search.dart';
 import 'transit.dart';
 
 class FavoriteEditor extends StatefulWidget {
-  const FavoriteEditor({super.key, this.original});
+  const FavoriteEditor({super.key, this.original, this.initialKind = 'subway'});
 
   final Favorite? original;
+  final String initialKind;
 
   @override
   State<FavoriteEditor> createState() => _FavoriteEditorState();
@@ -53,7 +54,7 @@ class _FavoriteEditorState extends State<FavoriteEditor> {
   void initState() {
     super.initState();
     final original = widget.original;
-    kind = original?.kind ?? 'subway';
+    kind = original?.kind ?? widget.initialKind;
     if (original == null) return;
     if (original.isBus) {
       busQuery.text = original.line;

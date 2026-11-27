@@ -116,12 +116,6 @@ internal class TransitStore(context: Context) {
         editor.apply()
     }
 
-    fun key(kind: String) = preferences.getString("key_$kind", "").orEmpty()
-
-    fun setKeys(subway: String, bus: String) {
-        preferences.edit().putString("key_subway", subway).putString("key_bus", bus).apply()
-    }
-
     fun theme() = preferences.getString("app_theme", null)
 
     fun setTheme(theme: String) {

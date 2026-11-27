@@ -71,10 +71,8 @@ class TransitWidget : AppWidgetProvider() {
 
     companion object {
         internal val executor = Executors.newCachedThreadPool()
-        private data class Cached(val generation: Int, val snapshot: Snapshot)
-        private val snapshots = ConcurrentHashMap<String, Cached>()
+        private val snapshots = ConcurrentHashMap<String, Snapshot>()
         private val locks = ConcurrentHashMap<String, Any>()
-        @Volatile private var generation = 0
         private const val refreshAction = "com.example.smart_public_transportation.REFRESH_TRANSIT"
         private const val pinnedAction = "com.example.smart_public_transportation.PINNED_TRANSIT"
 
@@ -100,14 +98,12 @@ class TransitWidget : AppWidgetProvider() {
             val store = TransitStore(context)
             val lock = locks.computeIfAbsent(favorite.id) { Any() }
             return synchronized(lock) {
-                val version = generation
-                val key = store.key(favorite.kind)
-                val cached = snapshots[favorite.id]?.takeIf { it.generation == version }?.snapshot
+                val cached = snapshots[favorite.id]
                 val age = cached?.let { System.currentTimeMillis() - it.checkedAt }
                 val current = if (cached != null && age != null && age in 0..4_000) cached
-                    else SeoulArrivals.refresh(favorite, key)
-                if (generation == version && store.favorites().any { it.id == favorite.id }) {
-                    snapshots[favorite.id] = Cached(version, current)
+                    else SeoulArrivals.refresh(favorite)
+                if (store.favorites().any { it.id == favorite.id }) {
+                    snapshots[favorite.id] = current
                     ids(context).filter { store.selection(it) == favorite.id }.forEach {
                         render(context, it, favorite, current)
                     }
@@ -122,21 +118,8 @@ class TransitWidget : AppWidgetProvider() {
             snapshots.keys.retainAll(valid.keys)
             ids(context).forEach {
                 val favorite = store.selection(it)?.let(valid::get)
-                val snapshot = favorite?.let { selected -> snapshots[selected.id]?.snapshot }
+                val snapshot = favorite?.let { selected -> snapshots[selected.id] }
                 render(context, it, favorite, snapshot)
-            }
-        }
-
-        internal fun reloadAll(context: Context) {
-            generation++
-            snapshots.clear()
-            executor.execute {
-                val store = TransitStore(context)
-                val selected = ids(context).groupBy(store::selection)
-                store.favorites().filter { it.id in selected }.forEach { favorite ->
-                    selected[favorite.id]?.forEach { render(context, it, favorite, null) }
-                    executor.execute { fetch(context, favorite) }
-                }
             }
         }
 
@@ -259,8 +242,7 @@ class TransitWidget : AppWidgetProvider() {
         private fun statusText(configured: Boolean, snapshot: Snapshot?) = when {
             !configured -> "눌러서 설정"
             snapshot == null -> "조회 중"
-            snapshot.status == "needsKey" -> "API 키 필요"
-            snapshot.status == "invalidKey" -> "API 키 확인"
+            snapshot.status == "offline" -> "실시간 정보 준비 중"
             snapshot.status in setOf("empty", "live", "sample") -> "도착 정보 없음"
             else -> "다시 조회해 주세요"
         }
